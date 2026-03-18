@@ -1,3 +1,5 @@
+import { apiClient } from "@/lib/api/axios";
+import { getMockCategories, getMockFeedImages } from "@/lib/mock-data";
 import {
   ApiEnvelope,
   FeedCategory,
@@ -5,16 +7,14 @@ import {
   FeedTag,
   UnknownRecord,
 } from "@/lib/types";
-import { getMockCategories, getMockFeedImages } from "@/lib/mock-data";
-
-const API_BASE_URL = "http://localhost:5001";
 
 const DEFAULT_SIZE = { width: 600, height: 800 };
 
 const isRecord = (value: unknown): value is UnknownRecord =>
   typeof value === "object" && value !== null;
 
-const asArray = <T>(value: unknown): T[] => (Array.isArray(value) ? value : []);
+export const asArray = <T>(value: unknown): T[] =>
+  Array.isArray(value) ? value : [];
 
 const asString = (value: unknown, fallback = "") =>
   typeof value === "string" ? value : typeof value === "number" ? String(value) : fallback;
@@ -74,7 +74,7 @@ const getTagList = (record: UnknownRecord, imageId: string): FeedTag[] => {
     .filter((tag): tag is FeedTag => Boolean(tag));
 };
 
-const normalizeCategory = (value: unknown, index: number): FeedCategory | null => {
+export const normalizeCategory = (value: unknown, index: number): FeedCategory | null => {
   if (!isRecord(value)) {
     return null;
   }
@@ -96,7 +96,7 @@ const buildPlaceholderUrl = (title: string, width: number, height: number) => {
   return `https://placehold.co/${width}x${height}/D9E6F2/17324D?text=${label}`;
 };
 
-const normalizeImage = (value: unknown, index: number): FeedImage | null => {
+export const normalizeImage = (value: unknown, index: number): FeedImage | null => {
   if (!isRecord(value)) {
     return null;
   }
@@ -139,105 +139,36 @@ const unwrapData = <T>(payload: unknown): T | null => {
   return (envelope.data ?? null) as T | null;
 };
 
-async function apiRequest<T>(path: string): Promise<T | null> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    cache: "no-store",
+export async function getRequestData<T>(path: string): Promise<T | null> {
+  const response = await apiClient.get<ApiEnvelope<T>>(path, {
+    headers: {
+      "Cache-Control": "no-store",
+    },
   });
 
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-
-  const payload = (await response.json()) as unknown;
-  return unwrapData<T>(payload);
+  return unwrapData<T>(response.data);
 }
 
-export async function fetchCategories(): Promise<FeedCategory[]> {
-  try {
-    const data = await apiRequest<unknown[]>("/categories");
-    const categories = asArray<unknown>(data)
-      .map((category, index) => normalizeCategory(category, index))
-      .filter((category): category is FeedCategory => Boolean(category));
-
-    if (categories.length === 0) {
-      return getMockCategories();
-    }
-
-    return [{ id: "all", name: "All", source: "api" }, ...categories];
-  } catch {
-    return getMockCategories();
-  }
-}
-
-type FetchImageOptions = {
-  categoryId?: string | null;
-};
-
-const withAllCategoryIfMissing = (images: FeedImage[]): FeedImage[] =>
+export const withCategoryFallback = (images: FeedImage[]): FeedImage[] =>
   images.map((image) => ({
     ...image,
     categoryName: image.categoryName || "Uncategorized",
   }));
 
-export async function fetchImages(options: FetchImageOptions = {}): Promise<FeedImage[]> {
-  const query = options.categoryId && options.categoryId !== "all"
-    ? `?categoryId=${encodeURIComponent(options.categoryId)}`
-    : "";
+export const getFallbackCategories = () => getMockCategories();
 
-  try {
-    const data = await apiRequest<unknown[]>(`/images${query}`);
-    const images = asArray<unknown>(data)
-      .map((image, index) => normalizeImage(image, index))
-      .filter((image): image is FeedImage => Boolean(image));
+export const getFallbackImages = () => getMockFeedImages();
 
-    if (images.length === 0) {
-      return getMockFeedImages();
-    }
+export const filterFallbackImagesByQuery = (query: string) => {
+  const lowerQuery = query.toLowerCase();
 
-    return withAllCategoryIfMissing(images);
-  } catch {
-    return getMockFeedImages();
-  }
-}
-
-export async function searchImages(searchTerm: string): Promise<FeedImage[]> {
-  const query = searchTerm.trim();
-  if (!query) {
-    return fetchImages();
-  }
-
-  try {
-    const data = await apiRequest<unknown[]>(
-      `/images/search?search=${encodeURIComponent(query)}`,
+  const matches = getMockFeedImages().filter((image) => {
+    return (
+      image.title.toLowerCase().includes(lowerQuery) ||
+      image.categoryName.toLowerCase().includes(lowerQuery) ||
+      image.tags.some((tag) => tag.name.toLowerCase().includes(lowerQuery))
     );
-    const images = asArray<unknown>(data)
-      .map((image, index) => normalizeImage(image, index))
-      .filter((image): image is FeedImage => Boolean(image));
+  });
 
-    if (images.length === 0) {
-      const fallback = getMockFeedImages().filter((image) => {
-        const lowerQuery = query.toLowerCase();
-        return (
-          image.title.toLowerCase().includes(lowerQuery) ||
-          image.categoryName.toLowerCase().includes(lowerQuery) ||
-          image.tags.some((tag) => tag.name.toLowerCase().includes(lowerQuery))
-        );
-      });
-
-      return fallback.length > 0 ? fallback : getMockFeedImages();
-    }
-
-    return withAllCategoryIfMissing(images);
-  } catch {
-    const lowerQuery = query.toLowerCase();
-    const fallback = getMockFeedImages().filter((image) => {
-      return (
-        image.title.toLowerCase().includes(lowerQuery) ||
-        image.categoryName.toLowerCase().includes(lowerQuery) ||
-        image.tags.some((tag) => tag.name.toLowerCase().includes(lowerQuery))
-      );
-    });
-
-    return fallback.length > 0 ? fallback : getMockFeedImages();
-  }
-}
+  return matches.length > 0 ? matches : getMockFeedImages();
+};

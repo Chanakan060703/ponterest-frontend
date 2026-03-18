@@ -12,7 +12,11 @@ import { CategoryTabs } from "@/components/feed/category-tabs";
 import { FeedHeader } from "@/components/feed/header";
 import { ImageGrid } from "@/components/feed/image-grid";
 import { SearchBar } from "@/components/feed/search-bar";
-import { fetchCategories, fetchImages, searchImages } from "@/lib/api";
+import {
+  listCategories,
+  listImages,
+  searchImagesByQuery,
+} from "@/lib/api";
 import { FeedCategory, FeedImage } from "@/lib/types";
 
 const PAGE_SIZE = 10;
@@ -36,7 +40,7 @@ export function FeedPage() {
     let cancelled = false;
 
     const loadCategories = async () => {
-      const nextCategories = await fetchCategories();
+      const nextCategories = await listCategories();
       if (!cancelled) {
         setCategories(nextCategories);
       }
@@ -58,8 +62,8 @@ export function FeedPage() {
 
       try {
         const nextImages = deferredSearch
-          ? await searchImages(deferredSearch)
-          : await fetchImages({ categoryId: selectedCategoryId });
+          ? await searchImagesByQuery(deferredSearch)
+          : await listImages({ categoryId: selectedCategoryId });
 
         if (cancelled) {
           return;
