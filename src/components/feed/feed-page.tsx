@@ -19,6 +19,7 @@ import {
 } from "@/lib/api";
 import { FeedCategory, FeedImage } from "@/lib/types";
 
+
 const PAGE_SIZE = 10;
 
 export function FeedPage() {
@@ -30,8 +31,10 @@ export function FeedPage() {
   const [selectedTag, setSelectedTag] = useState<{ id: string; name: string } | null>(null);
   const [searchText, setSearchText] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLowerLoading, setIsLowerLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearch = useDeferredValue(submittedSearch);
@@ -56,20 +59,28 @@ export function FeedPage() {
   useEffect(() => {
     let cancelled = false;
 
-    const loadImages = async () => {
+    const loadInitialImages = async () => {
       setIsLoading(true);
       setErrorMessage("");
+      setCurrentPage(1);
+      setHasMore(true);
 
       try {
         const nextImages = deferredSearch
           ? await searchImagesByQuery(deferredSearch)
-          : await listImages({ categoryId: selectedCategoryId });
+          : await listImages({
+              categoryId: selectedCategoryId,
+              tagId: selectedTag?.id,
+              page: 1,
+              limit: PAGE_SIZE
+            });
 
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
         setImages(nextImages);
+        if (nextImages.length < PAGE_SIZE) {
+          setHasMore(false);
+        }
       } catch {
         if (!cancelled) {
           setImages([]);
@@ -82,29 +93,53 @@ export function FeedPage() {
       }
     };
 
-    void loadImages();
+    void loadInitialImages();
 
     return () => {
       cancelled = true;
     };
-  }, [selectedCategoryId, deferredSearch]);
+  }, [selectedCategoryId, deferredSearch, selectedTag?.id]);
 
-  const filteredImages = images.filter((image) => {
-    if (selectedCategoryId !== "all" && image.categoryId !== selectedCategoryId) {
-      return false;
+  const handleLoadMore = useEffectEvent(async () => {
+    if (isLoading || isLowerLoading || !hasMore || deferredSearch) return;
+
+    setIsLowerLoading(true);
+    const nextPage = currentPage + 1;
+
+    try {
+      const nextImages = await listImages({
+        categoryId: selectedCategoryId,
+        tagId: selectedTag?.id,
+        page: nextPage,
+        limit: PAGE_SIZE
+      });
+
+      if (nextImages.length === 0) {
+        setHasMore(false);
+      } else {
+        setImages((prev) => {
+          const combined = [...prev, ...nextImages];
+          const uniqueMap = new Map();
+          combined.forEach(img => uniqueMap.set(img.id, img));
+          return Array.from(uniqueMap.values());
+        });
+        setCurrentPage(nextPage);
+        if (nextImages.length < PAGE_SIZE) {
+          setHasMore(false);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load more images:", err);
+    } finally {
+      setIsLowerLoading(false);
     }
-
-    if (!selectedTag) {
-      return true;
-    }
-
-    return image.tags.some((tag) => tag.id === selectedTag.id);
   });
 
-  const visibleImages = filteredImages.slice(0, visibleCount);
+  const filteredImages = images;
+  const visibleImages = filteredImages;
   const selectedCategoryLabel =
     categories.find((category) => category.id === selectedCategoryId)?.name ?? "All";
-  const usingFallback = visibleImages.length > 0 && visibleImages.every((image) => image.source === "mock");
+  const usingFallback = images.length > 0 && images.every((image) => image.source === "mock");
 
   useEffect(() => {
     if (selectedTag && !filteredImages.some((image) => image.tags.some((tag) => tag.id === selectedTag.id))) {
@@ -113,29 +148,17 @@ export function FeedPage() {
   }, [filteredImages, selectedTag]);
 
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [selectedCategoryId, deferredSearch, selectedTag]);
-
-  const handleLoadMore = useEffectEvent(() => {
-    if (visibleCount < filteredImages.length) {
-      setVisibleCount((current) => Math.min(current + PAGE_SIZE, filteredImages.length));
-    }
-  });
-
-  useEffect(() => {
     const node = loadMoreRef.current;
-    if (!node) {
-      return;
-    }
+    if (!node) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
-          handleLoadMore();
+          void handleLoadMore();
         }
       },
       {
-        rootMargin: "0px 0px 320px 0px",
+        rootMargin: "0px 0px 400px 0px",
       },
     );
 
@@ -144,7 +167,7 @@ export function FeedPage() {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [handleLoadMore]);
 
   const handleSearch = (value: string) => {
     setSelectedTag(null);
@@ -165,7 +188,7 @@ export function FeedPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff6ef_0%,#f5efe8_40%,#f2ebe3_100%)] text-[#23170f]">
-      <FeedHeader totalItems={filteredImages.length} />
+      <FeedHeader totalItems={images.length} />
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-8">
         <section className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
           <SearchBar
@@ -178,8 +201,8 @@ export function FeedPage() {
               Visual briefing
             </p>
             <p className="mt-3 text-base leading-7 text-[#f6e8de]">
-              Browse mixed-size image cards, jump across categories, and tap any keyword
-              to instantly narrow the feed without touching the backend.
+              Experience real-time infinite scroll powered by your own backend API.
+              Each scroll triggers a paginated request for the next set of inspiration.
             </p>
           </div>
         </section>
@@ -199,8 +222,7 @@ export function FeedPage() {
               onClearSearch={() => handleSearch("")}
             />
             <p className="text-sm text-[#70594c]">
-              Showing {Math.min(visibleImages.length, filteredImages.length)} of{" "}
-              {filteredImages.length} images
+              Showing {images.length} images from your collection
             </p>
           </div>
         </section>
@@ -234,13 +256,18 @@ export function FeedPage() {
               activeTagId={selectedTag?.id ?? null}
               onTagSelect={handleTagSelect}
             />
-            <div ref={loadMoreRef} className="flex min-h-16 items-center justify-center">
-              {visibleImages.length < filteredImages.length ? (
-                <p className="text-sm text-[#80675a]">Scroll for more inspiration</p>
-              ) : (
+            {hasMore ? (
+              <div ref={loadMoreRef} className="flex min-h-16 items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                  {isLowerLoading && <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#80675a] border-t-transparent" />}
+                  <p className="text-sm text-[#80675a]">Searching for more inspiration...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex min-h-16 items-center justify-center">
                 <p className="text-sm text-[#9c8578]">You&apos;ve reached the end of this set</p>
-              )}
-            </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="rounded-[2rem] border border-dashed border-black/10 bg-white/80 px-6 py-16 text-center shadow-[0_20px_50px_rgba(34,23,15,0.05)]">

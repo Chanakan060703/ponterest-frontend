@@ -10,21 +10,27 @@ import {
 
 type ListImagesOptions = {
   categoryId?: string | null;
+  tagId?: string | null;
+  page?: number;
+  limit?: number;
 };
 
 export async function listImages(
   options: ListImagesOptions = {},
 ): Promise<FeedImage[]> {
-  const { categoryId } = options;
+  const { categoryId, tagId, page = 1, limit = 10 } = options;
   
-  if (categoryId && categoryId.toString().includes("mock")) {
-    return getFallbackImages();
+  if ((categoryId && categoryId.toString().includes("mock")) || (tagId && tagId.toString().includes("mock"))) {
+    return getFallbackImages(page, limit);
   }
 
-  const query =
-    categoryId && categoryId !== "all"
-      ? `?categoryId=${encodeURIComponent(categoryId)}`
-      : "";
+  const params = new URLSearchParams();
+  if (categoryId && categoryId !== "all") params.append("categoryId", categoryId);
+  if (tagId) params.append("tagId", tagId);
+  params.append("page", page.toString());
+  params.append("limit", limit.toString());
+
+  const query = `?${params.toString()}`;
 
   try {
     const data = await getRequestData<unknown[]>(`/images${query}`);
@@ -33,12 +39,12 @@ export async function listImages(
       .filter((image): image is FeedImage => Boolean(image));
 
     if (images.length === 0) {
-      return getFallbackImages();
+      return getFallbackImages(page, limit);
     }
 
     return withCategoryFallback(images);
   } catch {
-    return getFallbackImages();
+    return getFallbackImages(page, limit);
   }
 }
 

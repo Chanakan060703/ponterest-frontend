@@ -104,7 +104,7 @@ export const normalizeImage = (value: unknown, index: number): FeedImage | null 
   const id = asString(value.id ?? value.imageId, `api-image-${index + 1}`);
   const title = asString(value.name ?? value.title, `Image ${index + 1}`);
   const width = asNumber(value.width, DEFAULT_SIZE.width);
-  const height = asNumber(value.height, DEFAULT_SIZE.height + (index % 4) * 60);
+  const height = asNumber(value.height, DEFAULT_SIZE.height + [0, 300, -200, 500][index % 4]);
   const rawCategory = isRecord(value.category) ? value.category : null;
   const categoryId = asString(
     value.categoryId ?? rawCategory?.id,
@@ -136,7 +136,26 @@ const unwrapData = <T>(payload: unknown): T | null => {
   }
 
   const envelope = payload as ApiEnvelope<T>;
-  return (envelope.data ?? null) as T | null;
+  const data = envelope.data;
+
+  if (isRecord(data)) {
+    const arrayKeys = ["categories", "images", "tags", "users"];
+    for (const key of arrayKeys) {
+      const potentialArray = data[key];
+      if (Array.isArray(potentialArray)) {
+        return potentialArray as unknown as T;
+      }
+    }
+    
+    const singleKeys = ["image", "category", "tag", "user"];
+    for (const key of singleKeys) {
+      if (data[key]) {
+        return data[key] as unknown as T;
+      }
+    }
+  }
+
+  return (data ?? null) as T | null;
 };
 
 export async function getRequestData<T>(path: string): Promise<T | null> {
@@ -157,7 +176,11 @@ export const withCategoryFallback = (images: FeedImage[]): FeedImage[] =>
 
 export const getFallbackCategories = () => getMockCategories();
 
-export const getFallbackImages = () => getMockFeedImages();
+export const getFallbackImages = (page = 1, limit = 10) => {
+  const allImages = getMockFeedImages();
+  const start = (page - 1) * limit;
+  return allImages.slice(start, start + limit);
+};
 
 export const filterFallbackImagesByQuery = (query: string) => {
   const lowerQuery = query.toLowerCase();

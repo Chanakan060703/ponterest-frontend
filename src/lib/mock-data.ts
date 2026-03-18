@@ -48,14 +48,14 @@ const mockTitles = [
 ];
 
 const mockSizes = [
-  [560, 740],
-  [620, 820],
-  [540, 680],
-  [610, 910],
-  [520, 760],
-  [640, 720],
-  [600, 940],
-  [580, 700],
+  [600, 400], // Short & Wide
+  [600, 900], // Tall
+  [600, 600], // Square
+  [600, 1100], // Very Tall
+  [600, 500], // Medium Short
+  [600, 800], // Standard
+  [600, 1200], // Extremely Tall
+  [600, 450], // Wide
 ] as const;
 
 const categories: FeedCategory[] = mockCategoryNames.map((name, index) => ({
