@@ -1,4 +1,5 @@
 import { FeedTag } from "@/lib/types";
+import { apiClient } from "@/lib/api/axios";
 import { asArray, getRequestData } from "@/lib/api/shared";
 
 const normalizeTagRecord = (value: unknown, index: number): FeedTag | null => {
@@ -28,5 +29,16 @@ export async function listTags(): Promise<FeedTag[]> {
       .filter((tag): tag is FeedTag => Boolean(tag));
   } catch {
     return [];
+  }
+}
+
+export async function createTag(name: string): Promise<FeedTag | null> {
+  try {
+    const response = await apiClient.post("/tags", { name });
+    const tag = response.data?.data?.tag;
+    return tag ? { id: String(tag.id), name: tag.name } : null;
+  } catch (error) {
+    console.error("Failed to create tag:", error);
+    return null;
   }
 }

@@ -1,4 +1,5 @@
 import { FeedImage } from "@/lib/types";
+import { apiClient } from "@/lib/api/axios";
 import {
   asArray,
   filterFallbackImagesByQuery,
@@ -74,4 +75,41 @@ export async function searchImagesByQuery(searchTerm: string): Promise<FeedImage
 
 export async function listImagesByCategory(categoryId: string): Promise<FeedImage[]> {
   return listImages({ categoryId });
+}
+
+export async function createImage(data: {
+  name: string;
+  categoryId: string | number;
+  tagIds?: (string | number)[];
+}): Promise<FeedImage | null> {
+  try {
+    const response = await apiClient.post("/images", data);
+    const image = normalizeImage(response.data?.data?.image, 0);
+    return image;
+  } catch (error) {
+    console.error("Failed to create image:", error);
+    return null;
+  }
+}
+
+export async function uploadImage(
+  imageId: string | number,
+  file: File,
+): Promise<{ url: string } | null> {
+  try {
+    const formData = new FormData();
+    formData.append("imageId", imageId.toString());
+    formData.append("file", file);
+
+    const response = await apiClient.put("/images/upload-image", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data?.data || null;
+  } catch (error) {
+    console.error("Failed to upload image:", error);
+    return null;
+  }
 }
