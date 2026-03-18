@@ -190,21 +190,12 @@ export function FeedPage() {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff6ef_0%,#f5efe8_40%,#f2ebe3_100%)] text-[#23170f]">
       <FeedHeader totalItems={images.length} />
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-8">
-        <section className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
+        <section className=" lg:grid-cols-[1.25fr_0.75fr]">
           <SearchBar
             initialValue={searchText}
             isLoading={isLoading}
             onSearch={handleSearch}
           />
-          <div className="rounded-[2rem] border border-black/5 bg-[#22170f] p-5 text-[#f8efe6] shadow-[0_22px_55px_rgba(34,23,15,0.12)]">
-            <p className="font-mono text-xs uppercase tracking-[0.28em] text-[#d7c2b3]">
-              Visual briefing
-            </p>
-            <p className="mt-3 text-base leading-7 text-[#f6e8de]">
-              Experience real-time infinite scroll powered by your own backend API.
-              Each scroll triggers a paginated request for the next set of inspiration.
-            </p>
-          </div>
         </section>
 
         <section className="space-y-4 rounded-[2rem] border border-black/5 bg-[rgba(255,255,255,0.72)] p-4 shadow-[0_24px_60px_rgba(34,23,15,0.06)] sm:p-5">
