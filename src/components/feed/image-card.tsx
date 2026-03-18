@@ -14,8 +14,6 @@ export function ImageCard({
   return (
     <article className="mb-5 break-inside-avoid overflow-hidden rounded-[1.75rem] border border-black/5 bg-white shadow-[0_22px_60px_rgba(34,23,15,0.08)]">
       <div className="overflow-hidden bg-[#efe7e1]">
-        {/* Intentionally using a native img because backend URLs may come from varying hosts. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={image.imageUrl}
           alt={image.title}

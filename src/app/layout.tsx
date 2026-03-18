@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description: "Pinterest-inspired image discovery feed powered by the Ponterest backend.",
 };
 
+import { Toaster } from "sonner";
+import { AuthProvider } from "@/components/providers/AuthProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,7 +30,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>
+          {children}
+          <Toaster position="top-center" richColors />
+        </AuthProvider>
       </body>
     </html>
   );

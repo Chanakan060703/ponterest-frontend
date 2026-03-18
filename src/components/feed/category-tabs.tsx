@@ -25,7 +25,7 @@ export function CategoryTabs({
               className={[
                 "rounded-full px-4 py-2.5 text-sm font-medium transition",
                 isActive
-                  ? "bg-[#22170f] text-[#f7efe8] shadow-[0_14px_30px_rgba(34,23,15,0.2)]"
+                  ? "bg-[#22170f] text-[#f7efe8]"
                   : "border border-black/5 bg-white/80 text-[#684f40] hover:bg-[#f5eee7]",
               ].join(" ")}
             >

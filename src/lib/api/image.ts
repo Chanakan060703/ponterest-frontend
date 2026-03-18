@@ -15,9 +15,15 @@ type ListImagesOptions = {
 export async function listImages(
   options: ListImagesOptions = {},
 ): Promise<FeedImage[]> {
+  const { categoryId } = options;
+  
+  if (categoryId && categoryId.toString().includes("mock")) {
+    return getFallbackImages();
+  }
+
   const query =
-    options.categoryId && options.categoryId !== "all"
-      ? `?categoryId=${encodeURIComponent(options.categoryId)}`
+    categoryId && categoryId !== "all"
+      ? `?categoryId=${encodeURIComponent(categoryId)}`
       : "";
 
   try {
