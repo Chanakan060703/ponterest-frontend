@@ -11,7 +11,7 @@ type ImageGridProps = {
 };
 
 function useColumnsCount() {
-  const [cols, setCols] = useState<number>(4);
+  const [cols, setCols] = useState<number>(1);
 
   useEffect(() => {
     function handleResize() {
