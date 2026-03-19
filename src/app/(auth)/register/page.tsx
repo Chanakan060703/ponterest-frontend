@@ -5,9 +5,26 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import axios from "axios";
 import { toast } from "sonner";
 import { registerSchema, RegisterInput } from "@/lib/validators";
 import { register as registerApi } from "@/lib/api/auth";
+
+const getErrorMessage = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    const response = error.response?.data as
+      | { error?: string; message?: string }
+      | undefined;
+
+    return response?.error ?? response?.message ?? error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "An error occurred during registration";
+};
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
@@ -32,9 +49,9 @@ export default function RegisterPage() {
       } else {
         toast.error("Registration failed. Please try again.");
       }
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.response?.data?.error || err.response?.data?.message || err.message || "An error occurred during registration");
+    } catch (error: unknown) {
+      console.error(error);
+      toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
