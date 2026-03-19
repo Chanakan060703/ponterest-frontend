@@ -85,7 +85,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await logoutApi();
     } catch {
-      // Clear client auth state even if the server cookie is already gone.
     } finally {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user");

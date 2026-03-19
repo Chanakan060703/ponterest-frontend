@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -9,6 +9,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { registerSchema, RegisterInput } from "@/lib/validators";
 import { register as registerApi } from "@/lib/api/auth";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 const getErrorMessage = (error: unknown) => {
   if (axios.isAxiosError(error)) {
@@ -29,6 +30,13 @@ const getErrorMessage = (error: unknown) => {
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      router.replace("/");
+    }
+  }, [user, router]);
 
   const {
     register,
