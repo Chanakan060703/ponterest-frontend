@@ -1,17 +1,33 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import axios from "axios";
 import { toast } from "sonner";
 import { loginSchema, LoginInput } from "@/lib/validators";
 import { login as loginApi } from "@/lib/api/auth";
 import { useAuth } from "@/components/providers/AuthProvider";
 
-export default function LoginPage() {
+const getErrorMessage = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    const response = error.response?.data as
+      | { error?: string; message?: string }
+      | undefined;
+
+    return response?.error ?? response?.message ?? error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "An error occurred during login";
+};
+
+function LoginContent() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -37,16 +53,17 @@ export default function LoginPage() {
 
     try {
       const result = await loginApi(data);
-      if (result && result.token && result.user) {
-        login(result.token as string, result.user as any);
+
+      if (result) {
+        login(result.token, result.user);
         toast.success("Welcome back!");
         router.push("/");
       } else {
         toast.error("Invalid email or password");
       }
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.response?.data?.error || err.response?.data?.message || err.message || "An error occurred during login");
+    } catch (error: unknown) {
+      console.error(error);
+      toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -119,7 +136,7 @@ export default function LoginPage() {
 
       <div className="mt-8 text-center pt-6 border-t border-[#e8dfd5]/50">
         <p className="text-[#6d5b4b]">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link
             href="/register"
             className="text-[#fb923c] font-bold hover:underline transition-all"
@@ -129,5 +146,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-8 md:p-10" />}>
+      <LoginContent />
+    </Suspense>
   );
 }
