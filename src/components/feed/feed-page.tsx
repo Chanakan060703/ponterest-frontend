@@ -167,7 +167,7 @@ export function FeedPage() {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [isLoading, hasMore, images.length]);
 
   const handleSearch = (value: string) => {
     setSelectedTag(null);
