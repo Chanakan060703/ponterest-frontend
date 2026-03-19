@@ -2,8 +2,8 @@ import { FeedImage } from "@/lib/types";
 
 type ImageCardProps = {
   image: FeedImage;
-  activeTagId: string | null;
-  onTagSelect: (tagId: string, tagName: string) => void;
+  activeTagId: number | null;
+  onTagSelect: (tagId: number, tagName: string) => void;
 };
 
 export function ImageCard({

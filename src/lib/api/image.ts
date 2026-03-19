@@ -10,8 +10,8 @@ import {
 } from "@/lib/api/shared";
 
 type ListImagesOptions = {
-  categoryId?: string | null;
-  tagId?: string | null;
+  categoryId?: number | null;
+  tagId?: number | null;
   page?: number;
   limit?: number;
 };
@@ -20,14 +20,18 @@ export async function listImages(
   options: ListImagesOptions = {},
 ): Promise<FeedImage[]> {
   const { categoryId, tagId, page = 1, limit = 10 } = options;
-  
-  if ((categoryId && categoryId.toString().includes("mock")) || (tagId && tagId.toString().includes("mock"))) {
+
+  if ((categoryId ?? 0) < 0 || (tagId ?? 0) < 0) {
     return getFallbackImages(page, limit);
   }
 
   const params = new URLSearchParams();
-  if (categoryId && categoryId !== "all") params.append("categoryId", categoryId);
-  if (tagId) params.append("tagId", tagId);
+  if (categoryId !== null && categoryId !== undefined) {
+    params.append("categoryId", String(categoryId));
+  }
+  if (tagId !== null && tagId !== undefined) {
+    params.append("tagId", String(tagId));
+  }
   params.append("page", page.toString());
   params.append("limit", limit.toString());
 
@@ -73,14 +77,14 @@ export async function searchImagesByQuery(searchTerm: string): Promise<FeedImage
   }
 }
 
-export async function listImagesByCategory(categoryId: string): Promise<FeedImage[]> {
+export async function listImagesByCategory(categoryId: number): Promise<FeedImage[]> {
   return listImages({ categoryId });
 }
 
 export async function createImage(data: {
   name: string;
-  categoryId: string | number;
-  tagIds?: (string | number)[];
+  categoryId: number;
+  tagIds?: number[];
 }): Promise<FeedImage | null> {
   try {
     const response = await apiClient.post("/images", data);
@@ -93,7 +97,7 @@ export async function createImage(data: {
 }
 
 export async function uploadImage(
-  imageId: string | number,
+  imageId: number,
   file: File,
 ): Promise<{ url: string } | null> {
   try {

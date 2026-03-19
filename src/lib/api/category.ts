@@ -17,7 +17,7 @@ export async function listCategories(): Promise<FeedCategory[]> {
       return getFallbackCategories();
     }
 
-    return [{ id: "all", name: "All", source: "api" }, ...categories];
+    return categories;
   } catch {
     return getFallbackCategories();
   }

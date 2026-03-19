@@ -19,6 +19,21 @@ export const asArray = <T>(value: unknown): T[] =>
 const asString = (value: unknown, fallback = "") =>
   typeof value === "string" ? value : typeof value === "number" ? String(value) : fallback;
 
+const asId = (value: unknown, fallback: number) => {
+  if (typeof value === "number" && Number.isInteger(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isInteger(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+};
+
 const asNumber = (value: unknown, fallback: number) => {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -34,17 +49,10 @@ const asNumber = (value: unknown, fallback: number) => {
   return fallback;
 };
 
-const toTitleCase = (value: string) =>
-  value
-    .split(/[\s-_]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-
-const normalizeTag = (value: unknown, index: number, imageId: string): FeedTag | null => {
+const normalizeTag = (value: unknown, index: number, imageId: number): FeedTag | null => {
   if (typeof value === "string") {
     const name = value.trim();
-    return name ? { id: `${imageId}-tag-${index + 1}`, name } : null;
+    return name ? { id: -(imageId * 100 + index + 1), name } : null;
   }
 
   if (!isRecord(value)) {
@@ -57,12 +65,12 @@ const normalizeTag = (value: unknown, index: number, imageId: string): FeedTag |
   }
 
   return {
-    id: asString(value.id ?? value.tagId, `${imageId}-tag-${index + 1}`),
+    id: asId(value.id ?? value.tagId, -(imageId * 100 + index + 1)),
     name: rawName,
   };
 };
 
-const getTagList = (record: UnknownRecord, imageId: string): FeedTag[] => {
+const getTagList = (record: UnknownRecord, imageId: number): FeedTag[] => {
   const rawTags =
     record.tags ??
     record.tagIds ??
@@ -85,7 +93,7 @@ export const normalizeCategory = (value: unknown, index: number): FeedCategory |
   }
 
   return {
-    id: asString(value.id ?? value.categoryId, `api-category-${index + 1}`),
+    id: asId(value.id ?? value.categoryId, -(index + 1)),
     name,
     source: "api",
   };
@@ -101,18 +109,18 @@ export const normalizeImage = (value: unknown, index: number): FeedImage | null 
     return null;
   }
 
-  const id = asString(value.id ?? value.imageId, `api-image-${index + 1}`);
+  const id = asId(value.id ?? value.imageId, -(index + 1));
   const title = asString(value.name ?? value.title, `Image ${index + 1}`);
   const width = asNumber(value.width, DEFAULT_SIZE.width);
   const height = asNumber(value.height, DEFAULT_SIZE.height + [0, 300, -200, 500][index % 4]);
   const rawCategory = isRecord(value.category) ? value.category : null;
-  const categoryId = asString(
+  const categoryId = asId(
     value.categoryId ?? rawCategory?.id,
-    `api-category-${(index % 6) + 1}`,
+    -((index % 6) + 1),
   );
   const categoryName = asString(
     rawCategory?.name ?? value.categoryName,
-    toTitleCase(categoryId.replace(/^api-category-/, "Category ")),
+    `Category ${Math.abs(categoryId)}`,
   );
   const tags = getTagList(value, id);
   const imageUrl = asString(value.url ?? value.imageUrl, buildPlaceholderUrl(title, width, height));
