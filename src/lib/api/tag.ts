@@ -14,9 +14,7 @@ const normalizeTagRecord = (value: unknown, index: number): FeedTag | null => {
   }
 
   const id =
-    typeof record.id === "string" || typeof record.id === "number"
-      ? String(record.id)
-      : `api-tag-${index + 1}`;
+    typeof record.id === "number" ? record.id : -(index + 1);
 
   return { id, name };
 };
@@ -36,7 +34,7 @@ export async function createTag(name: string): Promise<FeedTag | null> {
   try {
     const response = await apiClient.post("/tags", { name });
     const tag = response.data?.data?.tag;
-    return tag ? { id: String(tag.id), name: tag.name } : null;
+    return tag ? { id: tag.id, name: tag.name } : null;
   } catch (error) {
     console.error("Failed to create tag:", error);
     return null;

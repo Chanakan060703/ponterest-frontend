@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, Upload, Plus, Tag as TagIcon, Search, Loader2 } from "lucide-react";
+import { X, Upload, Plus, Search, Loader2 } from "lucide-react";
 import {
   createImage,
   uploadImage,
@@ -11,7 +11,6 @@ import {
 } from "@/lib/api";
 import { FeedCategory, FeedTag } from "@/lib/types";
 import { toast } from "sonner";
-import Image from "next/image";
 
 type CreateImageModalProps = {
   isOpen: boolean;
@@ -21,7 +20,7 @@ type CreateImageModalProps = {
 export function CreateImageModal({ isOpen, onClose }: CreateImageModalProps) {
   const [name, setName] = useState("");
   const [categories, setCategories] = useState<FeedCategory[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [allTags, setAllTags] = useState<FeedTag[]>([]);
   const [selectedTags, setSelectedTags] = useState<FeedTag[]>([]);
   const [tagSearch, setTagSearch] = useState("");
@@ -39,7 +38,7 @@ export function CreateImageModal({ isOpen, onClose }: CreateImageModalProps) {
 
   const loadInitialData = async () => {
     const [cats, tags] = await Promise.all([listCategories(), listTags()]);
-    setCategories(cats.filter((c) => c.id !== "all"));
+    setCategories(cats);
     setAllTags(tags);
   };
 
@@ -100,7 +99,12 @@ export function CreateImageModal({ isOpen, onClose }: CreateImageModalProps) {
       });
 
       if (image && file) {
-        await uploadImage(image.id, file);
+        const uploaded = await uploadImage(image.id, file);
+        if (!uploaded) {
+          toast.error("Image metadata was created, but the file upload failed.");
+          return;
+        }
+
         toast.success("Image created and uploaded successfully!");
         onClose();
         resetForm();
@@ -118,7 +122,7 @@ export function CreateImageModal({ isOpen, onClose }: CreateImageModalProps) {
 
   const resetForm = () => {
     setName("");
-    setSelectedCategoryId("");
+    setSelectedCategoryId(null);
     setSelectedTags([]);
     setFile(null);
     setPreviewUrl(null);
@@ -204,8 +208,12 @@ export function CreateImageModal({ isOpen, onClose }: CreateImageModalProps) {
             <div className="space-y-2">
               <label className="text-sm font-medium text-[#767676]">Category</label>
               <select
-                value={selectedCategoryId}
-                onChange={(e) => setSelectedCategoryId(e.target.value)}
+                value={selectedCategoryId ?? ""}
+                onChange={(e) =>
+                  setSelectedCategoryId(
+                    e.target.value ? Number(e.target.value) : null,
+                  )
+                }
                 className="w-full rounded-xl border border-black/10 px-4 py-3 outline-none focus:border-[#E60023] focus:ring-1 focus:ring-[#E60023]"
                 required
               >

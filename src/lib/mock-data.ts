@@ -59,7 +59,7 @@ const mockSizes = [
 ] as const;
 
 const categories: FeedCategory[] = mockCategoryNames.map((name, index) => ({
-  id: `mock-category-${index + 1}`,
+  id: -(index + 1),
   name,
   source: "mock",
 }));
@@ -67,7 +67,7 @@ const categories: FeedCategory[] = mockCategoryNames.map((name, index) => ({
 const buildTags = (seed: number): FeedTag[] => {
   const group = mockTagGroups[seed % mockTagGroups.length];
   return group.map((name, index) => ({
-    id: `mock-tag-${seed + 1}-${index + 1}`,
+    id: -((seed + 1) * 100 + index + 1),
     name,
   }));
 };
@@ -79,7 +79,7 @@ export const mockImages: FeedImage[] = mockTitles.map((title, index) => {
   const label = encodeURIComponent(`${title}\n${lines}`);
 
   return {
-    id: `mock-image-${index + 1}`,
+    id: -(index + 1),
     title,
     imageUrl: `https://placehold.co/${width}x${height}/EADFD2/3F3027?text=${label}`,
     categoryId: category.id,
@@ -91,10 +91,7 @@ export const mockImages: FeedImage[] = mockTitles.map((title, index) => {
   };
 });
 
-export const mockCategories: FeedCategory[] = [
-  { id: "all", name: "All", source: "mock" },
-  ...categories,
-];
+export const mockCategories: FeedCategory[] = categories;
 
 export const getMockFeedImages = () => mockImages;
 
