@@ -6,8 +6,8 @@ import { ImageCard } from "@/components/feed/image-card";
 
 type ImageGridProps = {
   images: FeedImage[];
-  activeTagId: string | null;
-  onTagSelect: (tagId: string, tagName: string) => void;
+  activeTagId: number | null;
+  onTagSelect: (tagId: number, tagName: string) => void;
 };
 
 function useColumnsCount() {

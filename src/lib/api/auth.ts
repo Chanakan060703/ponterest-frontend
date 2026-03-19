@@ -12,7 +12,7 @@ type RegisterPayload = AuthPayload & {
 };
 
 export type AuthUser = {
-  id: string;
+  id: number;
   name: string;
   email: string;
 };
@@ -29,7 +29,7 @@ const isAuthUser = (value: unknown): value is AuthUser => {
 
   const candidate = value as Record<string, unknown>;
   return (
-    typeof candidate.id === "string" &&
+    typeof candidate.id === "number" &&
     typeof candidate.name === "string" &&
     typeof candidate.email === "string"
   );

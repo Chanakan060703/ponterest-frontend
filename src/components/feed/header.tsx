@@ -3,11 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/components/providers/AuthProvider";
 
-type HeaderProps = {
-  totalItems: number;
-};
-
-export function FeedHeader({ totalItems }: HeaderProps) {
+export function FeedHeader() {
   const { user, logout } = useAuth();
 
   return (

@@ -23,12 +23,10 @@ import { FeedCategory, FeedImage } from "@/lib/types";
 const PAGE_SIZE = 10;
 
 export function FeedPage() {
-  const [categories, setCategories] = useState<FeedCategory[]>([
-    { id: "all", name: "All", source: "mock" },
-  ]);
+  const [categories, setCategories] = useState<FeedCategory[]>([]);
   const [images, setImages] = useState<FeedImage[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState("all");
-  const [selectedTag, setSelectedTag] = useState<{ id: string; name: string } | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedTag, setSelectedTag] = useState<{ id: number; name: string } | null>(null);
   const [searchText, setSearchText] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -138,7 +136,9 @@ export function FeedPage() {
   const filteredImages = images;
   const visibleImages = filteredImages;
   const selectedCategoryLabel =
-    categories.find((category) => category.id === selectedCategoryId)?.name ?? "All";
+    selectedCategoryId === null
+      ? "All"
+      : categories.find((category) => category.id === selectedCategoryId)?.name ?? "All";
   const usingFallback = images.length > 0 && images.every((image) => image.source === "mock");
 
   useEffect(() => {
@@ -167,7 +167,7 @@ export function FeedPage() {
     return () => {
       observer.disconnect();
     };
-  }, [handleLoadMore]);
+  }, []);
 
   const handleSearch = (value: string) => {
     setSelectedTag(null);
@@ -175,12 +175,12 @@ export function FeedPage() {
     setSubmittedSearch(value.trim());
   };
 
-  const handleCategorySelect = (categoryId: string) => {
+  const handleCategorySelect = (categoryId: number | null) => {
     setSelectedCategoryId(categoryId);
     setSelectedTag(null);
   };
 
-  const handleTagSelect = (tagId: string, tagName: string) => {
+  const handleTagSelect = (tagId: number, tagName: string) => {
     setSelectedTag((current) =>
       current?.id === tagId ? null : { id: tagId, name: tagName },
     );
@@ -188,7 +188,7 @@ export function FeedPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff6ef_0%,#f5efe8_40%,#f2ebe3_100%)] text-[#23170f]">
-      <FeedHeader totalItems={images.length} />
+      <FeedHeader />
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-8">
         <section className=" lg:grid-cols-[1.25fr_0.75fr]">
           <SearchBar

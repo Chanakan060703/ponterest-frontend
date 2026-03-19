@@ -1,21 +1,21 @@
 export type FeedSource = "api" | "mock";
 
 export type FeedTag = {
-  id: string;
+  id: number;
   name: string;
 };
 
 export type FeedCategory = {
-  id: string;
+  id: number;
   name: string;
   source: FeedSource;
 };
 
 export type FeedImage = {
-  id: string;
+  id: number;
   title: string;
   imageUrl: string;
-  categoryId: string;
+  categoryId: number;
   categoryName: string;
   tags: FeedTag[];
   width: number;

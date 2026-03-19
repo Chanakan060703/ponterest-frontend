@@ -2,13 +2,13 @@
 
 import React, { createContext, useContext, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { AuthUser } from "@/lib/api/auth";
+import { AuthUser, logout as logoutApi } from "@/lib/api/auth";
 
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   login: (token: string, user: AuthUser) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -81,11 +81,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/");
   };
 
-  const logout = () => {
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("user");
-    emitAuthStateChange();
-    router.push("/login");
+  const logout = async () => {
+    try {
+      await logoutApi();
+    } catch {
+      // Clear client auth state even if the server cookie is already gone.
+    } finally {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user");
+      emitAuthStateChange();
+      router.push("/login");
+    }
   };
 
   return (
