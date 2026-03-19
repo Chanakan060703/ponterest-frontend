@@ -10,7 +10,13 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex">
       {user && <Sidebar />}
-      <main className={`flex-1 ${user ? "ml-20" : ""}`}>
+      <main
+        className={`flex-1 min-w-0 ${
+          user
+            ? "sm:ml-20 pb-16 sm:pb-0"
+            : ""
+        }`}
+      >
         {children}
       </main>
     </div>
