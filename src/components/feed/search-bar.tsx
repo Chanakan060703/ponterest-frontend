@@ -1,16 +1,15 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { Search, X } from "lucide-react";
 
 type SearchBarProps = {
   initialValue: string;
-  isLoading: boolean;
   onSearch: (value: string) => void;
 };
 
 export function SearchBar({
   initialValue,
-  isLoading,
   onSearch,
 }: SearchBarProps) {
   const [value, setValue] = useState(initialValue);
@@ -32,32 +31,26 @@ export function SearchBar({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex w-full flex-col gap-3 rounded-[2rem] border border-black/5 bg-white/90 p-3 shadow-[0_24px_50px_rgba(34,23,15,0.08)] sm:flex-row sm:items-center"
+      className="w-full"
     >
-      <div className="flex min-w-0 flex-1 items-center gap-3 rounded-[1.4rem] bg-[#f7f2ed] px-4 py-3">
-        <span className="text-lg text-[#886c58]">⌕</span>
+      <div className="flex h-11 min-w-0 items-center gap-3 rounded-full border border-black/5 bg-[#f7f2ed]/95 px-4 shadow-[0_10px_24px_rgba(34,23,15,0.05)] transition focus-within:border-[#fb923c]/30 focus-within:bg-[#fbf6f1] focus-within:ring-2 focus-within:ring-[#fb923c]/25 sm:h-12">
+        <Search size={15} className="shrink-0 text-[#886c58]" />
         <input
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder="Search by image name, tag, or category"
           className="w-full min-w-0 bg-transparent text-sm text-[#2a1d14] outline-none placeholder:text-[#9b7f6d]"
         />
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="rounded-full bg-[#1f4d3c] px-5 py-3 text-sm font-medium text-[#f8efe6] transition hover:bg-[#173c2f] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isLoading ? "Searching..." : "Search"}
-        </button>
-        <button
-          type="button"
-          onClick={handleClear}
-          className="rounded-full border border-black/10 px-5 py-3 text-sm font-medium text-[#5e4b40] transition hover:bg-[#f3ece6]"
-        >
-          Clear
-        </button>
+        {value ? (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#6f5748] transition hover:bg-[#eaded4] hover:text-[#22170f]"
+            aria-label="Clear search"
+          >
+            <X size={17} strokeWidth={2.4} />
+          </button>
+        ) : null}
       </div>
     </form>
   );

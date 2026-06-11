@@ -210,6 +210,14 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
       <FeedHeader
         eyebrow={isExplore ? "Ponterest Explore" : "Ponterest Home"}
         title={isExplore ? "Your favorite images" : "Ideas worth saving"}
+        searchSlot={
+          !isExplore ? (
+            <SearchBar
+              initialValue={searchText}
+              onSearch={handleSearch}
+            />
+          ) : undefined
+        }
       />
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-8">
         {!isExplore ? (
@@ -244,14 +252,6 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
 
         {!isExplore ? (
           <>
-            <section className=" lg:grid-cols-[1.25fr_0.75fr]">
-              <SearchBar
-                initialValue={searchText}
-                isLoading={isLoading}
-                onSearch={handleSearch}
-              />
-            </section>
-
             <section className="space-y-4 rounded-[2rem] border border-black/5 bg-[rgba(255,255,255,0.72)] p-4 shadow-[0_24px_60px_rgba(34,23,15,0.06)] sm:p-5">
               <CategoryTabs
                 categories={categories}
