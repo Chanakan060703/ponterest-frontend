@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   BriefcaseBusiness,
   ChevronDown,
@@ -21,41 +22,11 @@ import { CreateImageModal } from "@/components/feed/create-image-modal";
 import { ImageGrid } from "@/components/feed/image-grid";
 import { ImagePreviewModal } from "@/components/feed/image-preview-modal";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useFavorites } from "@/hooks/use-favorites";
 import { FeedImage } from "@/lib/types";
-
-const FAVORITES_STORAGE_KEY = "ponterest.favoriteImageIds";
-const FAVORITE_IMAGES_STORAGE_KEY = "ponterest.favoriteImages";
 
 type ExploreTab = "pins" | "boards" | "collages";
 type SortMode = "recent" | "oldest" | "title";
-
-const getStoredFavoriteState = () => {
-  try {
-    const storedIdsValue = localStorage.getItem(FAVORITES_STORAGE_KEY);
-    const storedImagesValue = localStorage.getItem(FAVORITE_IMAGES_STORAGE_KEY);
-    const storedIds = storedIdsValue ? JSON.parse(storedIdsValue) : [];
-    const storedImages = storedImagesValue ? JSON.parse(storedImagesValue) : [];
-
-    return {
-      ids: Array.isArray(storedIds)
-        ? storedIds.filter((id): id is number => typeof id === "number")
-        : [],
-      images: Array.isArray(storedImages)
-        ? storedImages.filter((image): image is FeedImage => {
-            return (
-              image &&
-              typeof image === "object" &&
-              typeof image.id === "number" &&
-              typeof image.title === "string" &&
-              typeof image.imageUrl === "string"
-            );
-          })
-        : [],
-    };
-  } catch {
-    return { ids: [], images: [] };
-  }
-};
 
 const uniqueById = (images: FeedImage[]) => {
   const imageMap = new Map<number, FeedImage>();
@@ -65,12 +36,13 @@ const uniqueById = (images: FeedImage[]) => {
 
 export function ExplorePage() {
   const { user, logout } = useAuth();
-  const [favoriteImageIds, setFavoriteImageIds] = useState<number[]>(
-    () => getStoredFavoriteState().ids,
-  );
-  const [favoriteImages, setFavoriteImages] = useState<FeedImage[]>(
-    () => getStoredFavoriteState().images,
-  );
+  const router = useRouter();
+  const {
+    favoriteIdSet,
+    favoriteImages,
+    isLoadingFavorites,
+    toggleFavorite,
+  } = useFavorites(user);
   const [selectedImage, setSelectedImage] = useState<FeedImage | null>(null);
   const [searchText, setSearchText] = useState("");
   const [activeTag, setActiveTag] = useState<{ id: number; name: string } | null>(null);
@@ -82,10 +54,12 @@ export function ExplorePage() {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const favoriteIdSet = useMemo(
-    () => new Set(favoriteImageIds),
-    [favoriteImageIds],
-  );
+  useEffect(() => {
+    if (!user) {
+      router.push("/login");
+    }
+  }, [router, user]);
+
   const displayName = user?.name || user?.email.split("@")[0] || "Chonakan";
   const initial = displayName.charAt(0).toUpperCase();
 
@@ -194,31 +168,6 @@ export function ExplorePage() {
       .filter((collage) => collage.images.length > 0)
       .sort((first, second) => second.images.length - first.images.length);
   }, [favoriteImages]);
-
-  const handleFavoriteToggle = (image: FeedImage) => {
-    setFavoriteImageIds((current) => {
-      const isAlreadyFavorite = current.includes(image.id);
-      const nextIds = isAlreadyFavorite
-        ? current.filter((id) => id !== image.id)
-        : [...current, image.id];
-
-      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(nextIds));
-
-      setFavoriteImages((currentImages) => {
-        const nextImages = isAlreadyFavorite
-          ? currentImages.filter((favoriteImage) => favoriteImage.id !== image.id)
-          : [
-              image,
-              ...currentImages.filter((favoriteImage) => favoriteImage.id !== image.id),
-            ];
-
-        localStorage.setItem(FAVORITE_IMAGES_STORAGE_KEY, JSON.stringify(nextImages));
-        return nextImages;
-      });
-
-      return nextIds;
-    });
-  };
 
   const handleTagSelect = (tagId: number, tagName: string) => {
     setActiveTab("pins");
@@ -524,13 +473,21 @@ export function ExplorePage() {
               onImageSelect={setSelectedImage}
               showFavoriteAction
               favoriteImageIds={favoriteIdSet}
-              onFavoriteToggle={handleFavoriteToggle}
+              onFavoriteToggle={toggleFavorite}
             />
           ) : (
             <EmptyState
-              title={favoriteImages.length === 0 ? "No favorites yet" : "No saved ideas found"}
+              title={
+                isLoadingFavorites
+                  ? "Loading favorites"
+                  : favoriteImages.length === 0
+                    ? "No favorites yet"
+                    : "No saved ideas found"
+              }
               description={
-                favoriteImages.length === 0
+                isLoadingFavorites
+                  ? "Your saved ideas are being loaded."
+                  : favoriteImages.length === 0
                   ? "Go to Home and tap the heart on images you want to keep here."
                   : "Try changing your search, sort, board, or tag filters."
               }
@@ -623,7 +580,7 @@ export function ExplorePage() {
         onTagSelect={handleTagSelect}
         showFavoriteAction
         isFavorite={selectedImage ? favoriteIdSet.has(selectedImage.id) : false}
-        onFavoriteToggle={handleFavoriteToggle}
+        onFavoriteToggle={toggleFavorite}
       />
       <CreateImageModal
         isOpen={isCreateOpen}
