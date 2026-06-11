@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, ExternalLink, Loader2, X } from "lucide-react";
+import { Download, ExternalLink, Heart, Loader2, X } from "lucide-react";
 import { FeedImage } from "@/lib/types";
 
 type ImagePreviewModalProps = {
   image: FeedImage | null;
   onClose: () => void;
   onTagSelect: (tagId: number, tagName: string) => void;
+  showFavoriteAction?: boolean;
+  isFavorite?: boolean;
+  onFavoriteToggle?: (image: FeedImage) => void;
 };
 
 const getImageFileName = (image: FeedImage) => {
@@ -24,6 +27,9 @@ export function ImagePreviewModal({
   image,
   onClose,
   onTagSelect,
+  showFavoriteAction = false,
+  isFavorite = false,
+  onFavoriteToggle,
 }: ImagePreviewModalProps) {
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -138,6 +144,22 @@ export function ImagePreviewModal({
           </div>
 
           <div className="mt-auto grid gap-3">
+            {showFavoriteAction ? (
+              <button
+                type="button"
+                onClick={() => onFavoriteToggle?.(image)}
+                className={[
+                  "flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition",
+                  isFavorite
+                    ? "bg-[#ffe3e8] text-[#c9184a] hover:bg-[#ffd4dd]"
+                    : "bg-[#eee3d9] text-[#5f493c] hover:bg-[#dfd0c4]",
+                ].join(" ")}
+                aria-pressed={isFavorite}
+              >
+                <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
+                {isFavorite ? "Favorited" : "Add to favorites"}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={handleDownload}

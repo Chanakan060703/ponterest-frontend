@@ -1,5 +1,5 @@
-import { FeedPage } from "@/components/feed/feed-page";
+import { ExplorePage } from "@/components/feed/explore-page";
 
-export default function ExplorePage() {
-  return <FeedPage variant="explore" />;
+export default function ExploreRoute() {
+  return <ExplorePage />;
 }

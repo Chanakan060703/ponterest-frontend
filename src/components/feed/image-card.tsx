@@ -1,11 +1,14 @@
 import { FeedImage } from "@/lib/types";
-import { Download, Maximize2 } from "lucide-react";
+import { Download, Heart, Maximize2 } from "lucide-react";
 
 type ImageCardProps = {
   image: FeedImage;
   activeTagId: number | null;
   onTagSelect: (tagId: number, tagName: string) => void;
   onImageSelect: (image: FeedImage) => void;
+  showFavoriteAction?: boolean;
+  isFavorite?: boolean;
+  onFavoriteToggle?: (image: FeedImage) => void;
 };
 
 export function ImageCard({
@@ -13,6 +16,9 @@ export function ImageCard({
   activeTagId,
   onTagSelect,
   onImageSelect,
+  showFavoriteAction = false,
+  isFavorite = false,
+  onFavoriteToggle,
 }: ImageCardProps) {
   return (
     <article className="mb-5 break-inside-avoid overflow-hidden rounded-[1.75rem] border border-black/5 bg-white shadow-[0_22px_60px_rgba(34,23,15,0.08)]">
@@ -48,14 +54,32 @@ export function ImageCard({
           >
             {image.title}
           </button>
-          <button
-            type="button"
-            onClick={() => onImageSelect(image)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f6efe9] text-[#624d40] transition hover:bg-[#ece0d6]"
-            aria-label={`Download ${image.title}`}
-          >
-            <Download size={16} />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {showFavoriteAction ? (
+              <button
+                type="button"
+                onClick={() => onFavoriteToggle?.(image)}
+                className={[
+                  "flex h-8 w-8 items-center justify-center rounded-full transition",
+                  isFavorite
+                    ? "bg-[#ffe3e8] text-[#c9184a]"
+                    : "bg-[#f6efe9] text-[#624d40] hover:bg-[#ece0d6]",
+                ].join(" ")}
+                aria-label={isFavorite ? `Remove ${image.title} from favorites` : `Add ${image.title} to favorites`}
+                aria-pressed={isFavorite}
+              >
+                <Heart size={16} fill={isFavorite ? "currentColor" : "none"} />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => onImageSelect(image)}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f6efe9] text-[#624d40] transition hover:bg-[#ece0d6]"
+              aria-label={`Download ${image.title}`}
+            >
+              <Download size={16} />
+            </button>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {image.tags.map((tag, index) => {
