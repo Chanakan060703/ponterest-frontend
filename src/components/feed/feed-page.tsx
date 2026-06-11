@@ -11,6 +11,7 @@ import { ActiveFilters } from "@/components/feed/active-filters";
 import { CategoryTabs } from "@/components/feed/category-tabs";
 import { FeedHeader } from "@/components/feed/header";
 import { ImageGrid } from "@/components/feed/image-grid";
+import { ImagePreviewModal } from "@/components/feed/image-preview-modal";
 import { SearchBar } from "@/components/feed/search-bar";
 import {
   listCategories,
@@ -22,9 +23,14 @@ import { FeedCategory, FeedImage } from "@/lib/types";
 
 const PAGE_SIZE = 10;
 
-export function FeedPage() {
+type FeedPageProps = {
+  variant?: "home" | "explore";
+};
+
+export function FeedPage({ variant = "home" }: FeedPageProps) {
   const [categories, setCategories] = useState<FeedCategory[]>([]);
   const [images, setImages] = useState<FeedImage[]>([]);
+  const [selectedImage, setSelectedImage] = useState<FeedImage | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedTag, setSelectedTag] = useState<{ id: number; name: string } | null>(null);
   const [searchText, setSearchText] = useState("");
@@ -140,6 +146,7 @@ export function FeedPage() {
       ? "All"
       : categories.find((category) => category.id === selectedCategoryId)?.name ?? "All";
   const usingFallback = images.length > 0 && images.every((image) => image.source === "mock");
+  const isExplore = variant === "explore";
 
   useEffect(() => {
     if (selectedTag && !filteredImages.some((image) => image.tags.some((tag) => tag.id === selectedTag.id))) {
@@ -188,8 +195,27 @@ export function FeedPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff6ef_0%,#f5efe8_40%,#f2ebe3_100%)] text-[#23170f]">
-      <FeedHeader />
+      <FeedHeader
+        eyebrow={isExplore ? "Ponterest Explore" : "Ponterest Feed"}
+        title={isExplore ? "Explore images" : "Ideas worth saving"}
+      />
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-8">
+        {isExplore ? (
+          <section className="grid gap-4 rounded-[2rem] border border-black/5 bg-[#22170f] p-5 text-[#f8efe6] shadow-[0_24px_60px_rgba(34,23,15,0.12)] sm:p-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.24em] text-[#dfc9b9]">
+                Discover
+              </p>
+              <h2 className="mt-2 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
+                Find fresh visuals by category, tag, or title.
+              </h2>
+            </div>
+            <p className="text-sm leading-6 text-[#d9c8ba]">
+              Tap any image to inspect the original, browse matching tags, and download it when you need it.
+            </p>
+          </section>
+        ) : null}
+
         <section className=" lg:grid-cols-[1.25fr_0.75fr]">
           <SearchBar
             initialValue={searchText}
@@ -246,6 +272,7 @@ export function FeedPage() {
               images={visibleImages}
               activeTagId={selectedTag?.id ?? null}
               onTagSelect={handleTagSelect}
+              onImageSelect={setSelectedImage}
             />
             {hasMore ? (
               <div ref={loadMoreRef} className="flex min-h-16 items-center justify-center">
@@ -271,6 +298,11 @@ export function FeedPage() {
           </div>
         )}
       </main>
+      <ImagePreviewModal
+        image={selectedImage}
+        onClose={() => setSelectedImage(null)}
+        onTagSelect={handleTagSelect}
+      />
     </div>
   );
 }

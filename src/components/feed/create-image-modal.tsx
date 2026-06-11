@@ -151,6 +151,7 @@ export function CreateImageModal({ isOpen, onClose }: CreateImageModalProps) {
         <div className="flex flex-1 flex-col items-center justify-center bg-[#f0f0f0] p-8 lg:w-1/2">
           {previewUrl ? (
             <div className="relative h-full w-full max-h-[600px] overflow-hidden rounded-2xl group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
                 alt="Preview"
