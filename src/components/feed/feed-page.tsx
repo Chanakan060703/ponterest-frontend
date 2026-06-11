@@ -22,6 +22,8 @@ import { FeedCategory, FeedImage } from "@/lib/types";
 
 
 const PAGE_SIZE = 10;
+const FAVORITES_STORAGE_KEY = "ponterest.favoriteImageIds";
+const FAVORITE_IMAGES_STORAGE_KEY = "ponterest.favoriteImages";
 
 type FeedPageProps = {
   variant?: "home" | "explore";
@@ -40,8 +42,11 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLowerLoading, setIsLowerLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [favoriteImageIds, setFavoriteImageIds] = useState<number[]>([]);
+  const [favoriteImages, setFavoriteImages] = useState<FeedImage[]>([]);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearch = useDeferredValue(submittedSearch);
+  const isExplore = variant === "explore";
 
   useEffect(() => {
     let cancelled = false;
@@ -70,7 +75,9 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
       setHasMore(true);
 
       try {
-        const nextImages = deferredSearch
+        const nextImages = isExplore
+          ? []
+          : deferredSearch
           ? await searchImagesByQuery(deferredSearch)
           : await listImages({
               categoryId: selectedCategoryId,
@@ -82,7 +89,7 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
         if (cancelled) return;
 
         setImages(nextImages);
-        if (nextImages.length < PAGE_SIZE) {
+        if (isExplore || nextImages.length < PAGE_SIZE) {
           setHasMore(false);
         }
       } catch {
@@ -102,7 +109,7 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [selectedCategoryId, deferredSearch, selectedTag?.id]);
+  }, [isExplore, selectedCategoryId, deferredSearch, selectedTag?.id]);
 
   const handleLoadMore = useEffectEvent(async () => {
     if (isLoading || isLowerLoading || !hasMore || deferredSearch) return;
@@ -139,14 +146,46 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
     }
   });
 
-  const filteredImages = images;
+  const filteredImages = isExplore ? favoriteImages : images;
   const visibleImages = filteredImages;
   const selectedCategoryLabel =
     selectedCategoryId === null
       ? "All"
       : categories.find((category) => category.id === selectedCategoryId)?.name ?? "All";
   const usingFallback = images.length > 0 && images.every((image) => image.source === "mock");
-  const isExplore = variant === "explore";
+  const favoriteIdSet = new Set(favoriteImageIds);
+  const selectedImageIsFavorite = selectedImage ? favoriteIdSet.has(selectedImage.id) : false;
+
+  useEffect(() => {
+    try {
+      const storedValue = localStorage.getItem(FAVORITES_STORAGE_KEY);
+      const storedImagesValue = localStorage.getItem(FAVORITE_IMAGES_STORAGE_KEY);
+      const storedIds = storedValue ? JSON.parse(storedValue) : [];
+      const storedImages = storedImagesValue ? JSON.parse(storedImagesValue) : [];
+
+      if (Array.isArray(storedIds)) {
+        setFavoriteImageIds(
+          storedIds.filter((id): id is number => typeof id === "number"),
+        );
+      }
+      if (Array.isArray(storedImages)) {
+        setFavoriteImages(
+          storedImages.filter((image): image is FeedImage => {
+            return (
+              image &&
+              typeof image === "object" &&
+              typeof image.id === "number" &&
+              typeof image.title === "string" &&
+              typeof image.imageUrl === "string"
+            );
+          }),
+        );
+      }
+    } catch {
+      setFavoriteImageIds([]);
+      setFavoriteImages([]);
+    }
+  }, []);
 
   useEffect(() => {
     if (selectedTag && !filteredImages.some((image) => image.tags.some((tag) => tag.id === selectedTag.id))) {
@@ -193,56 +232,102 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
     );
   };
 
+  const handleFavoriteToggle = (image: FeedImage) => {
+    setFavoriteImageIds((current) => {
+      const isAlreadyFavorite = current.includes(image.id);
+      const nextIds = isAlreadyFavorite
+        ? current.filter((id) => id !== image.id)
+        : [...current, image.id];
+
+      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(nextIds));
+
+      setFavoriteImages((currentImages) => {
+        const nextImages = isAlreadyFavorite
+          ? currentImages.filter((favoriteImage) => favoriteImage.id !== image.id)
+          : [
+              image,
+              ...currentImages.filter((favoriteImage) => favoriteImage.id !== image.id),
+            ];
+
+        localStorage.setItem(FAVORITE_IMAGES_STORAGE_KEY, JSON.stringify(nextImages));
+        return nextImages;
+      });
+
+      return nextIds;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff6ef_0%,#f5efe8_40%,#f2ebe3_100%)] text-[#23170f]">
       <FeedHeader
-        eyebrow={isExplore ? "Ponterest Explore" : "Ponterest Feed"}
-        title={isExplore ? "Explore images" : "Ideas worth saving"}
+        eyebrow={isExplore ? "Ponterest Explore" : "Ponterest Home"}
+        title={isExplore ? "Your favorite images" : "Ideas worth saving"}
       />
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-8">
-        {isExplore ? (
+        {!isExplore ? (
           <section className="grid gap-4 rounded-[2rem] border border-black/5 bg-[#22170f] p-5 text-[#f8efe6] shadow-[0_24px_60px_rgba(34,23,15,0.12)] sm:p-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end">
             <div>
               <p className="font-mono text-xs uppercase tracking-[0.24em] text-[#dfc9b9]">
-                Discover
+                Home
               </p>
               <h2 className="mt-2 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
                 Find fresh visuals by category, tag, or title.
               </h2>
             </div>
             <p className="text-sm leading-6 text-[#d9c8ba]">
-              Tap any image to inspect the original, browse matching tags, and download it when you need it.
+              Tap any image to inspect the original, save favorites, browse matching tags, and download it when you need it.
             </p>
           </section>
-        ) : null}
-
-        <section className=" lg:grid-cols-[1.25fr_0.75fr]">
-          <SearchBar
-            initialValue={searchText}
-            isLoading={isLoading}
-            onSearch={handleSearch}
-          />
-        </section>
-
-        <section className="space-y-4 rounded-[2rem] border border-black/5 bg-[rgba(255,255,255,0.72)] p-4 shadow-[0_24px_60px_rgba(34,23,15,0.06)] sm:p-5">
-          <CategoryTabs
-            categories={categories}
-            activeCategoryId={selectedCategoryId}
-            onSelect={handleCategorySelect}
-          />
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <ActiveFilters
-              categoryLabel={selectedCategoryLabel}
-              tagLabel={selectedTag?.name ?? null}
-              searchLabel={submittedSearch}
-              onClearTag={() => setSelectedTag(null)}
-              onClearSearch={() => handleSearch("")}
-            />
+        ) : (
+          <section className="grid gap-3 border-b border-black/10 pb-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.24em] text-[#806758]">
+                Saved from Home
+              </p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[#22170f]">
+                Favorites
+              </h2>
+            </div>
             <p className="text-sm text-[#70594c]">
-              Showing {images.length} images from your collection
+              {favoriteImages.length} images saved for later
             </p>
-          </div>
-        </section>
+          </section>
+        )}
+
+        {!isExplore ? (
+          <>
+            <section className=" lg:grid-cols-[1.25fr_0.75fr]">
+              <SearchBar
+                initialValue={searchText}
+                isLoading={isLoading}
+                onSearch={handleSearch}
+              />
+            </section>
+
+            <section className="space-y-4 rounded-[2rem] border border-black/5 bg-[rgba(255,255,255,0.72)] p-4 shadow-[0_24px_60px_rgba(34,23,15,0.06)] sm:p-5">
+              <CategoryTabs
+                categories={categories}
+                activeCategoryId={selectedCategoryId}
+                onSelect={handleCategorySelect}
+              />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <ActiveFilters
+                  categoryLabel={selectedCategoryLabel}
+                  tagLabel={selectedTag?.name ?? null}
+                  searchLabel={submittedSearch}
+                  onClearTag={() => setSelectedTag(null)}
+                  onClearSearch={() => handleSearch("")}
+                />
+                <p className="text-sm text-[#70594c]">
+                  Showing {images.length} images from your collection
+                </p>
+                <p className="rounded-full bg-[#ffe3e8] px-3 py-1.5 text-sm font-medium text-[#b81742]">
+                  {favoriteImageIds.length} favorited
+                </p>
+              </div>
+            </section>
+          </>
+        ) : null}
 
         {usingFallback ? (
           <div className="rounded-[1.5rem] border border-[#e9dccf] bg-[#fff6ee] px-4 py-3 text-sm text-[#765a4a]">
@@ -257,7 +342,7 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
           </div>
         ) : null}
 
-        {isLoading ? (
+        {isLoading && !isExplore ? (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: PAGE_SIZE }).map((_, index) => (
               <div
@@ -273,8 +358,11 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
               activeTagId={selectedTag?.id ?? null}
               onTagSelect={handleTagSelect}
               onImageSelect={setSelectedImage}
+              showFavoriteAction
+              favoriteImageIds={favoriteIdSet}
+              onFavoriteToggle={handleFavoriteToggle}
             />
-            {hasMore ? (
+            {hasMore && !isExplore ? (
               <div ref={loadMoreRef} className="flex min-h-16 items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
                   {isLowerLoading && <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#80675a] border-t-transparent" />}
@@ -283,17 +371,21 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
               </div>
             ) : (
               <div className="flex min-h-16 items-center justify-center">
-                <p className="text-sm text-[#9c8578]">You&apos;ve reached the end of this set</p>
+                <p className="text-sm text-[#9c8578]">
+                  {isExplore ? "These are all your favorites" : "You&apos;ve reached the end of this set"}
+                </p>
               </div>
             )}
           </>
         ) : (
           <div className="rounded-[2rem] border border-dashed border-black/10 bg-white/80 px-6 py-16 text-center shadow-[0_20px_50px_rgba(34,23,15,0.05)]">
             <h2 className="text-2xl font-semibold tracking-tight text-[#24170f]">
-              No images match the current filters
+              {isExplore ? "No favorites yet" : "No images match the current filters"}
             </h2>
             <p className="mt-3 text-sm text-[#725b4d]">
-              Try clearing the search or selected keyword to widen the feed again.
+              {isExplore
+                ? "Go back Home and tap the heart on images you want to keep here."
+                : "Try clearing the search or selected keyword to widen the feed again."}
             </p>
           </div>
         )}
@@ -302,6 +394,9 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
         image={selectedImage}
         onClose={() => setSelectedImage(null)}
         onTagSelect={handleTagSelect}
+        showFavoriteAction
+        isFavorite={selectedImageIsFavorite}
+        onFavoriteToggle={handleFavoriteToggle}
       />
     </div>
   );
