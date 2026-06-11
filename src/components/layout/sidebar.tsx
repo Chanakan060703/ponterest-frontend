@@ -93,7 +93,7 @@ export function Sidebar() {
         </button>
       </nav>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex sm:hidden h-16 items-center justify-around border-t border-black/5 bg-white/90 backdrop-blur-xl px-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 grid h-16 grid-cols-5 items-center justify-items-center border-t border-black/5 bg-white/90 px-1 backdrop-blur-xl sm:hidden">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -101,7 +101,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all ${
+              className={`flex w-full flex-col items-center gap-0.5 rounded-xl px-2 py-1 transition-all ${
                 isActive ? "text-[#fb923c]" : "text-[#767676]"
               }`}
             >
@@ -113,7 +113,8 @@ export function Sidebar() {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-[#fb923c] text-white shadow-[0_8px_24px_rgba(251,146,60,0.35)] active:scale-95 transition-transform"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-[#fb923c] text-white shadow-[0_8px_24px_rgba(251,146,60,0.35)] transition-transform active:scale-95"
+          aria-label="Create image"
         >
           <Plus size={22} />
         </button>
@@ -123,7 +124,7 @@ export function Sidebar() {
           return (
             <button
               key={item.label}
-              className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-[#767676] transition-all"
+              className="flex w-full flex-col items-center gap-0.5 rounded-xl px-2 py-1 text-[#767676] transition-all"
             >
               <Icon size={22} strokeWidth={2} />
               <span className="text-[10px] font-medium">{item.label}</span>
