@@ -8,6 +8,7 @@ type ImageGridProps = {
   images: FeedImage[];
   activeTagId: number | null;
   onTagSelect: (tagId: number, tagName: string) => void;
+  onImageSelect: (image: FeedImage) => void;
 };
 
 function useColumnsCount() {
@@ -35,6 +36,7 @@ export function ImageGrid({
   images,
   activeTagId,
   onTagSelect,
+  onImageSelect,
 }: ImageGridProps) {
   const numCols = useColumnsCount();
 
@@ -53,6 +55,7 @@ export function ImageGrid({
               image={image}
               activeTagId={activeTagId}
               onTagSelect={onTagSelect}
+              onImageSelect={onImageSelect}
             />
           ))}
         </div>

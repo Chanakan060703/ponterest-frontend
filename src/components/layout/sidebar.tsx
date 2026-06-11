@@ -27,7 +27,6 @@ export function Sidebar() {
     { icon: MessageCircle, label: "Messages" },
   ];
 
-  const allBottomItems = [...navItems, null, ...actionItems];
   return (
     <>
       <nav className="fixed left-0 top-0 z-40 hidden sm:flex h-screen w-20 flex-col items-center border-r border-black/5 bg-white py-8">

@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useAuth } from "@/components/providers/AuthProvider";
 
-export function FeedHeader() {
+type FeedHeaderProps = {
+  eyebrow?: string;
+  title?: string;
+};
+
+export function FeedHeader({
+  eyebrow = "Ponterest Feed",
+  title = "Ideas worth saving",
+}: FeedHeaderProps) {
   const { user, logout } = useAuth();
 
   return (
@@ -12,10 +20,10 @@ export function FeedHeader() {
         <div className="flex items-center gap-2 min-w-0">
           <div className="min-w-0">
             <p className="hidden sm:block font-mono text-xs uppercase tracking-[0.28em] text-[#7b6352]">
-              Ponterest Feed
+              {eyebrow}
             </p>
             <h1 className="truncate text-lg font-semibold tracking-tight text-[#22170f] sm:text-2xl">
-              Ideas worth saving
+              {title}
             </h1>
           </div>
         </div>
