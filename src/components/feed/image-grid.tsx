@@ -9,6 +9,9 @@ type ImageGridProps = {
   activeTagId: number | null;
   onTagSelect: (tagId: number, tagName: string) => void;
   onImageSelect: (image: FeedImage) => void;
+  showFavoriteAction?: boolean;
+  favoriteImageIds?: Set<number>;
+  onFavoriteToggle?: (image: FeedImage) => void;
 };
 
 function useColumnsCount() {
@@ -37,6 +40,9 @@ export function ImageGrid({
   activeTagId,
   onTagSelect,
   onImageSelect,
+  showFavoriteAction = false,
+  favoriteImageIds = new Set<number>(),
+  onFavoriteToggle,
 }: ImageGridProps) {
   const numCols = useColumnsCount();
 
@@ -56,6 +62,9 @@ export function ImageGrid({
               activeTagId={activeTagId}
               onTagSelect={onTagSelect}
               onImageSelect={onImageSelect}
+              showFavoriteAction={showFavoriteAction}
+              isFavorite={favoriteImageIds.has(image.id)}
+              onFavoriteToggle={onFavoriteToggle}
             />
           ))}
         </div>
