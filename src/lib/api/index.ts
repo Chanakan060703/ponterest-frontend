@@ -1,6 +1,7 @@
 export { apiClient } from "@/lib/api/axios";
 export { login, logout, register } from "@/lib/api/auth";
 export { listCategories } from "@/lib/api/category";
+export { addFavorite, listFavorites, removeFavorite } from "@/lib/api/favorite";
 export {
   createImage,
   listImages,

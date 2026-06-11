@@ -13,6 +13,8 @@ import { FeedHeader } from "@/components/feed/header";
 import { ImageGrid } from "@/components/feed/image-grid";
 import { ImagePreviewModal } from "@/components/feed/image-preview-modal";
 import { SearchBar } from "@/components/feed/search-bar";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { useFavorites } from "@/hooks/use-favorites";
 import {
   listCategories,
   listImages,
@@ -22,14 +24,13 @@ import { FeedCategory, FeedImage } from "@/lib/types";
 
 
 const PAGE_SIZE = 10;
-const FAVORITES_STORAGE_KEY = "ponterest.favoriteImageIds";
-const FAVORITE_IMAGES_STORAGE_KEY = "ponterest.favoriteImages";
 
 type FeedPageProps = {
   variant?: "home" | "explore";
 };
 
 export function FeedPage({ variant = "home" }: FeedPageProps) {
+  const { user } = useAuth();
   const [categories, setCategories] = useState<FeedCategory[]>([]);
   const [images, setImages] = useState<FeedImage[]>([]);
   const [selectedImage, setSelectedImage] = useState<FeedImage | null>(null);
@@ -42,11 +43,15 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLowerLoading, setIsLowerLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [favoriteImageIds, setFavoriteImageIds] = useState<number[]>([]);
-  const [favoriteImages, setFavoriteImages] = useState<FeedImage[]>([]);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearch = useDeferredValue(submittedSearch);
   const isExplore = variant === "explore";
+  const {
+    favoriteIdSet,
+    favoriteImageIds,
+    favoriteImages,
+    toggleFavorite,
+  } = useFavorites(user);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,39 +158,7 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
       ? "All"
       : categories.find((category) => category.id === selectedCategoryId)?.name ?? "All";
   const usingFallback = images.length > 0 && images.every((image) => image.source === "mock");
-  const favoriteIdSet = new Set(favoriteImageIds);
   const selectedImageIsFavorite = selectedImage ? favoriteIdSet.has(selectedImage.id) : false;
-
-  useEffect(() => {
-    try {
-      const storedValue = localStorage.getItem(FAVORITES_STORAGE_KEY);
-      const storedImagesValue = localStorage.getItem(FAVORITE_IMAGES_STORAGE_KEY);
-      const storedIds = storedValue ? JSON.parse(storedValue) : [];
-      const storedImages = storedImagesValue ? JSON.parse(storedImagesValue) : [];
-
-      if (Array.isArray(storedIds)) {
-        setFavoriteImageIds(
-          storedIds.filter((id): id is number => typeof id === "number"),
-        );
-      }
-      if (Array.isArray(storedImages)) {
-        setFavoriteImages(
-          storedImages.filter((image): image is FeedImage => {
-            return (
-              image &&
-              typeof image === "object" &&
-              typeof image.id === "number" &&
-              typeof image.title === "string" &&
-              typeof image.imageUrl === "string"
-            );
-          }),
-        );
-      }
-    } catch {
-      setFavoriteImageIds([]);
-      setFavoriteImages([]);
-    }
-  }, []);
 
   useEffect(() => {
     if (selectedTag && !filteredImages.some((image) => image.tags.some((tag) => tag.id === selectedTag.id))) {
@@ -230,31 +203,6 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
     setSelectedTag((current) =>
       current?.id === tagId ? null : { id: tagId, name: tagName },
     );
-  };
-
-  const handleFavoriteToggle = (image: FeedImage) => {
-    setFavoriteImageIds((current) => {
-      const isAlreadyFavorite = current.includes(image.id);
-      const nextIds = isAlreadyFavorite
-        ? current.filter((id) => id !== image.id)
-        : [...current, image.id];
-
-      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(nextIds));
-
-      setFavoriteImages((currentImages) => {
-        const nextImages = isAlreadyFavorite
-          ? currentImages.filter((favoriteImage) => favoriteImage.id !== image.id)
-          : [
-              image,
-              ...currentImages.filter((favoriteImage) => favoriteImage.id !== image.id),
-            ];
-
-        localStorage.setItem(FAVORITE_IMAGES_STORAGE_KEY, JSON.stringify(nextImages));
-        return nextImages;
-      });
-
-      return nextIds;
-    });
   };
 
   return (
@@ -360,7 +308,7 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
               onImageSelect={setSelectedImage}
               showFavoriteAction
               favoriteImageIds={favoriteIdSet}
-              onFavoriteToggle={handleFavoriteToggle}
+              onFavoriteToggle={toggleFavorite}
             />
             {hasMore && !isExplore ? (
               <div ref={loadMoreRef} className="flex min-h-16 items-center justify-center">
@@ -396,7 +344,7 @@ export function FeedPage({ variant = "home" }: FeedPageProps) {
         onTagSelect={handleTagSelect}
         showFavoriteAction
         isFavorite={selectedImageIsFavorite}
-        onFavoriteToggle={handleFavoriteToggle}
+        onFavoriteToggle={toggleFavorite}
       />
     </div>
   );
