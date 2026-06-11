@@ -1,30 +1,62 @@
 import { FeedImage } from "@/lib/types";
+import { Download, Maximize2 } from "lucide-react";
 
 type ImageCardProps = {
   image: FeedImage;
   activeTagId: number | null;
   onTagSelect: (tagId: number, tagName: string) => void;
+  onImageSelect: (image: FeedImage) => void;
 };
 
 export function ImageCard({
   image,
   activeTagId,
   onTagSelect,
+  onImageSelect,
 }: ImageCardProps) {
   return (
     <article className="mb-5 break-inside-avoid overflow-hidden rounded-[1.75rem] border border-black/5 bg-white shadow-[0_22px_60px_rgba(34,23,15,0.08)]">
-      <div
-        className="overflow-hidden bg-[#efe7e1]"
+      <button
+        type="button"
+        onClick={() => onImageSelect(image)}
+        className="group relative block w-full overflow-hidden bg-[#efe7e1] text-left"
         style={{ aspectRatio: `${image.width} / ${image.height}` }}
+        aria-label={`View ${image.title}`}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={image.imageUrl}
           alt={image.title}
-          className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
           loading="lazy"
         />
-      </div>
+        <div className="absolute inset-0 flex items-start justify-between bg-gradient-to-b from-black/45 via-black/0 to-black/20 p-3 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+          <span className="line-clamp-2 max-w-[70%] rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-[#24170f] shadow-sm">
+            {image.title}
+          </span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[#24170f] shadow-sm">
+            <Maximize2 size={17} />
+          </span>
+        </div>
+      </button>
       <div className="space-y-3 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => onImageSelect(image)}
+            className="line-clamp-2 text-left text-sm font-semibold text-[#24170f] transition hover:text-[#1f4d3c]"
+          >
+            {image.title}
+          </button>
+          <button
+            type="button"
+            onClick={() => onImageSelect(image)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f6efe9] text-[#624d40] transition hover:bg-[#ece0d6]"
+            aria-label={`Download ${image.title}`}
+          >
+            <Download size={16} />
+          </button>
+        </div>
         <div className="flex flex-wrap gap-2">
           {image.tags.map((tag, index) => {
             const isActive = activeTagId === tag.id;
